@@ -1,17 +1,17 @@
-# how frequently the script should check for new appointments (minutes)
-RUN_FREQUENCY = 3
+VACCINE_SPOTTER_URL="https://www.vaccinespotter.org/api/v0/states/MN.json"
 
-# the name of the person using the script (will be used in Text To Speech Notifications)
-USER_NAME = "DEREK"
+RESULT_FOUND_SLEEP_TIME=60
 
-# the URL to check
-SPOTTER_URL = "https://www.vaccinespotter.org/MN/?zip={}&provider={}"
+RESULT_NOT_FOUND_SLEEP_TIME=3
 
-# which zip code to use
-DEFAULT_ZIP_CODE = "55418"
+TWILIO_ACCOUNT_SID=""
 
-# which pharmacies to check for appointments
-PHARMACY = "HYVEE"
+TWILIO_TOKEN=""
 
-# how many times to play the message
-PLAY_COUNT = 5
+TWILIO_PHONE_NUMBER=""
+
+PHONE_NUMBER_TO_RECEIVE_NOTIFICATIONS=""
+
+ZIP_CODE="55306"
+
+DESIRED_DISTANCE=25
