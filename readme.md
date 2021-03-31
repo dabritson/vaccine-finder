@@ -1,17 +1,23 @@
-## How to use ##
+## What it is?
 
-This assumes you already have a working install of Python (I used Python 3.6.6 and Pip 21.0.1)
-Assumes user is on a Mac OS X platform.
+Updated to run in docker via the vaccine spotter API. 
 
-1. pip install --upgrade pip
-2. pip install -r requirements.pip
-3. Install chromedriver to same directory as script (see https://sites.google.com/a/chromium.org/chromedriver/home)
-4. python vaccine_finder.py
-    - Note: The specific URL, pharmacy, run frequency etc are in settings.py
+* Scans the vaccine spotter api for resutls
+* Validates results are within your desired range based on your zip code
+* Will send you a text message with the results
 
-Note: When tested on Big Sur, there were some issues with Brew/OpenSSL and PyEnv, see https://github.com/pyenv/pyenv/issues/1643 for discussion.
-Depending on your setup, the runtime vars below might help resolve the issue.
 
-CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix readline)/include -I$(xcrun --show-sdk-path)/usr/include" \
-LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix readline)/lib -L$(xcrun --show-sdk-path)/usr/lib" \
-pyenv install 3.8.5
+## How to use
+
+* Create a twilio account and setup a phone number in which to send messages from
+* Create a twilio auth token
+* Fill out the settings.py with the appropriate twilio data as well as adding your zip code
+* Run the bash script; which takes care of creating your docker image as well as running your container
+* `./run.sh`
+
+
+## Todo?
+* Add exception handling
+* Allow app to continue if users don't add twilio info - just skip the notification
+* Locate twilio support articles and add them here
+* Probably some other stuff I'm missing...

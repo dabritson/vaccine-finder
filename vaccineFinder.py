@@ -5,14 +5,16 @@ import time
 import argparse
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
+from twilio.rest import Client
 
 class Location():
-    def __init__(self, name, address, city, state, zipCode, latitude, longitude):
+    def __init__(self, name, address, city, state, zipCode, url, latitude, longitude):
         self.name = name
         self.address = address
         self.city = city
         self.state = state
         self.zipCode = zipCode
+        self.url = url
         self.latitude = latitude
         self.longitude = longitude
         self.distance = 0
@@ -43,6 +45,9 @@ class Location():
     def getAppointments(self):
         return self.appointments
 
+    def getUrl(self):
+        return self.url
+
     def toString(self):
         return f"{self.name}\n{self.address}\n{self.city}, {self.state} {self.zipCode}"
 
@@ -67,7 +72,7 @@ class Notification():
         self.receivingPhoneNumber = receivingPhoneNumber
         
     def sendNotificaiton(self, body):
-        message = client.messages.create(
+        message = self.client.messages.create(
             body =  body,
             from_ = self.sendingPhoneNumber,
             to =    self.receivingPhoneNumber
@@ -94,12 +99,13 @@ class VaccineSpotter():
             city = locationData["properties"]["city"]
             state = locationData["properties"]["state"]
             zipCode = locationData["properties"]["postal_code"]
+            locationUrl = locationData["properties"]["url"]
             locationName = providerBrandName + " - " + name
             appointments = locationData["properties"]["appointments"]
             
             appointmentCount = len(appointments) if appointments else 0
             if appointmentCount > 0:
-                newLocation = Location(locationName, address, city, state, zipCode, latitude, longitude)
+                newLocation = Location(locationName, address, city, state, zipCode, locationUrl, latitude, longitude)
                 newLocation.setDistanceFromLocation(self.myZipCode)
                 for appointment in appointments:
                     appointmentTime = appointment["time"]
@@ -132,25 +138,36 @@ def main():
     notification = Notification(twilioAccountSid, twilioToken, twilioPhoneNumber, phoneNumberToReceiveNotifications)
 
     while True:
+        countLocationsOutOfRange = 0
         locations = VaccineSpotter(url, myZipCode).createLocationList()
-        deleteLocationsIfOutsideOfDesiredRange()
-        notificatonBody = f"Found {len(locations)} locations with appointments\n\n"
+        notificatonBody = ""
+        notificationHeader = ""
+        notificatonMessage = ""
         print(f"Found {len(locations)} locations with appointments\n")
         
         if len(locations) > 0:
             for location in locations:
-                if location.getAppointmentCount() > 0:
-                    storeDistance = location.getDistanceFromLocation()
-                    notificatonBody += (f"{location.toString()}\n")
-                    notificatonBody += (f"{location.getAppointmentCount()} appointments\n")
-                    notificatonBody += (f"{storeDistance} miles\n\n")
-                    print(location.toString())
-                    print(f"Distance: {storeDistance} miles")
-                    print("Appointments:")
-                    for appointment in location.getAppointments():
-                        print(f"\t{appointment.toString()}")
-                    print("")
-            notification.sendNotificaiton(notificatonBody)
+                if not int(location.getDistanceFromLocation()) > desiredDistance:
+                    if location.getAppointmentCount() > 0:
+                        notificatonBody += (f"{location.toString()}\n")
+                        notificatonBody += (f"{location.getAppointmentCount()} appointments\n")
+                        notificatonBody += (f"{location.getDistanceFromLocation()} miles\n")
+                        notificatonBody += (f"{location.getUrl()}\n\n")
+                        print(location.toString())
+                        print(f"Distance: {location.getDistanceFromLocation()} miles")
+                        print("Appointments:")
+                        for appointment in location.getAppointments():
+                            print(f"\t{appointment.toString()}")
+                        print("")
+                else:
+                    countLocationsOutOfRange += 1
+                if countLocationsOutOfRange > 0:
+                    print(f"Skipped {countLocationsOutOfRange} locations that were out of your desired range")
+            notificationHeader = f"Found {len(locations)} locations with appointments."
+            notificationHeader += f" {len(locations) - countLocationsOutOfRange} within your desired range and {countLocationsOutOfRange} outside of your desired range\n\n"
+            notificatonMessage += notificationHeader
+            notificatonMessage += notificatonBody
+            notification.sendNotificaiton(notificatonMessage)
             print(f"Waiting for {resultFoundSleep} minutes....")
             time.sleep(resultFoundSleep * 60)
         else:
